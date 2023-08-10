@@ -184,8 +184,9 @@ class Gapy():
 
     def __create(self, params=None):
         if params is None:
-            params = gapyGetFilterParameterDefault()
-        return self.gac.gac_create(byref(params))
+            return self.gac.gac_create(None)
+        else:
+            return self.gac.gac_create(byref(params))
 
     def __destroy(self):
         self.gac.gac_destroy(self.h)
@@ -199,6 +200,7 @@ class Gapy():
         GapyFilterParameter, None
             the parameter structure or None on failure
         """
+        params = GapyFilterParameter()
         if self.gac.gac_get_filter_parameter(self.h, byref(params)):
             return params
         else:
@@ -532,7 +534,7 @@ class GapyQueue():
         instance = klass()
         if self.gac.gac_queue_pop(self.q, byref(instance)):
             return instance
-        else
+        else:
             return None
 
     def push(self, data):
