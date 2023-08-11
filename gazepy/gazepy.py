@@ -1,9 +1,11 @@
-#!/usr/bin/python3
+"""
+Python bindings for the C library libgac.
+"""
 
 from ctypes import *
-import pathlib
+import os
 
-class GapyFilterParameterGap(Structure):
+class GazepyFilterParameterGap(Structure):
     """
     The paramters to configure the gap filter.
     """
@@ -12,7 +14,7 @@ class GapyFilterParameterGap(Structure):
             ("sample_period", c_double)
     ]
 
-class GapyFilterParameterNoise(Structure):
+class GazepyFilterParameterNoise(Structure):
     """
     The paramters to configure the noise filter.
     """
@@ -21,7 +23,7 @@ class GapyFilterParameterNoise(Structure):
             ("mid_idx", c_uint)
     ]
 
-class GapyFilterParameterSaccade(Structure):
+class GazepyFilterParameterSaccade(Structure):
     """
     The paramters to configure the saccade filter.
     """
@@ -29,7 +31,7 @@ class GapyFilterParameterSaccade(Structure):
             ("velocity_threshold", c_float)
     ]
 
-class GapyFilterParameterFixation(Structure):
+class GazepyFilterParameterFixation(Structure):
     """
     The paramters to configure the fixation filter.
     """
@@ -38,20 +40,20 @@ class GapyFilterParameterFixation(Structure):
             ("dispersion_threshold", c_float)
     ]
 
-class GapyFilterParameter(Structure):
+class GazepyFilterParameter(Structure):
     """
     The filter parameter structure holding all parameters used to configure the
     filters.
     """
     _fields_ = [
             ("is_heap", c_bool),
-            ("gap", GapyFilterParameterGap),
-            ("noise", GapyFilterParameterNoise),
-            ("saccade", GapyFilterParameterSaccade),
-            ("fixation", GapyFilterParameterFixation)
+            ("gap", GazepyFilterParameterGap),
+            ("noise", GazepyFilterParameterNoise),
+            ("saccade", GazepyFilterParameterSaccade),
+            ("fixation", GazepyFilterParameterFixation)
     ]
 
-class GapySample(Structure):
+class GazepySample(Structure):
     """
     A data sample to be passed to gaze analysis filters.
     """
@@ -62,7 +64,7 @@ class GapySample(Structure):
             ("timestamp", c_double)
     ]
 
-class GapyFixation(Structure):
+class GazepyFixation(Structure):
     """
     A fixation data structure.
     """
@@ -73,7 +75,7 @@ class GapyFixation(Structure):
             ("timestamp", c_double)
     ]
 
-class GapySaccade(Structure):
+class GazepySaccade(Structure):
     """
     A saccade data structure.
     """
@@ -85,43 +87,44 @@ class GapySaccade(Structure):
             ("timestamp", c_double)
     ]
 
-class GapyLib():
+class GazepyLib():
     """
     Loads libgac and defines the function interfaces.
     """
     def __init__(self):
         # load dynamic library
-        libname = pathlib.Path().absolute() / "gac/build/lib/libgac.so"
+        # libname = pathlib.Path().absolute() / "bin/libgac.so"
+        libname = os.path.abspath( os.path.dirname(__file__)) + "/bin/libgac.so"
         self.gac = CDLL(libname)
 
         # define function interfaces
         self.gac.gac_get_filter_parameter.restype = c_bool
-        self.gac.gac_get_filter_parameter.argtypes = [c_void_p, POINTER(GapyFilterParameter)]
+        self.gac.gac_get_filter_parameter.argtypes = [c_void_p, POINTER(GazepyFilterParameter)]
         self.gac.gac_get_filter_parameter_default.restype = c_bool
-        self.gac.gac_get_filter_parameter_default.argtypes = [POINTER(GapyFilterParameter)]
+        self.gac.gac_get_filter_parameter_default.argtypes = [POINTER(GazepyFilterParameter)]
         self.gac.gac_create.restype = c_void_p
-        self.gac.gac_create.argtypes = [POINTER(GapyFilterParameter)]
+        self.gac.gac_create.argtypes = [POINTER(GazepyFilterParameter)]
         self.gac.gac_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_fixation_create.restype = c_void_p
         self.gac.gac_filter_fixation_create.argtypes = [c_double, c_double]
         self.gac.gac_filter_fixation_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_fixation.restype = c_bool
-        self.gac.gac_filter_fixation.argtypes = [c_void_p, POINTER(GapySample), POINTER(GapyFixation)]
+        self.gac.gac_filter_fixation.argtypes = [c_void_p, POINTER(GazepySample), POINTER(GazepyFixation)]
         self.gac.gac_filter_gap_create.restype = c_void_p
         self.gac.gac_filter_gap_create.argtypes = [c_double, c_double]
         self.gac.gac_filter_gap_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_gap.restype = c_uint
-        self.gac.gac_filter_gap.argtypes = [c_void_p, c_void_p, POINTER(GapySample)]
+        self.gac.gac_filter_gap.argtypes = [c_void_p, c_void_p, POINTER(GazepySample)]
         self.gac.gac_filter_noise_create.restype = c_void_p
         self.gac.gac_filter_noise_create.argtypes = [c_uint, c_uint]
         self.gac.gac_filter_noise_destroy.argtypes = [c_void_p]
-        self.gac.gac_filter_noise.restype = POINTER(GapySample)
-        self.gac.gac_filter_noise.argtypes = [c_void_p, POINTER(GapySample)]
+        self.gac.gac_filter_noise.restype = POINTER(GazepySample)
+        self.gac.gac_filter_noise.argtypes = [c_void_p, POINTER(GazepySample)]
         self.gac.gac_filter_saccade_create.restype = c_void_p
         self.gac.gac_filter_saccade_create.argtypes = [c_float]
         self.gac.gac_filter_saccade_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_saccade.restype = c_bool
-        self.gac.gac_filter_saccade.argtypes = [c_void_p, POINTER(GapySample), POINTER(GapySaccade)]
+        self.gac.gac_filter_saccade.argtypes = [c_void_p, POINTER(GazepySample), POINTER(GazepySaccade)]
         self.gac.gac_queue_clear.restype = c_bool
         self.gac.gac_queue_clear.argtypes = [c_void_p]
         self.gac.gac_queue_create.restype = c_void_p
@@ -137,9 +140,9 @@ class GapyLib():
         self.gac.gac_sample_window_cleanup.restype = c_bool
         self.gac.gac_sample_window_cleanup.argtypes = [c_void_p]
         self.gac.gac_sample_window_fixation_filter.restype = c_bool
-        self.gac.gac_sample_window_fixation_filter.argtypes = [c_void_p, POINTER(GapyFixation)]
+        self.gac.gac_sample_window_fixation_filter.argtypes = [c_void_p, POINTER(GazepyFixation)]
         self.gac.gac_sample_window_saccade_filter.restype = c_bool
-        self.gac.gac_sample_window_saccade_filter.argtypes = [c_void_p, POINTER(GapySaccade)]
+        self.gac.gac_sample_window_saccade_filter.argtypes = [c_void_p, POINTER(GazepySaccade)]
         self.gac.gac_sample_window_update.argtypes = [c_void_p, c_float, c_float, c_float, c_float, c_float, c_float, c_double]
 
     def getFilterParameterDefault(self):
@@ -149,16 +152,16 @@ class GapyLib():
 
         Returns
         -------
-        GapyFilterParameter, None
+        GazepyFilterParameter, None
             the parameter structure or None on failure
         """
-        params = GapyFilterParameter()
+        params = GazepyFilterParameter()
         if self.gac.gac_get_filter_parameter_default(byref(params)):
             return params
         else:
             return None
 
-class Gapy():
+class Gazepy():
     """
     The gaze analysis handler. This handler maintains its own sample window
     and is therefore easier to use than the individual filter handlers.
@@ -171,9 +174,9 @@ class Gapy():
         """
         Parameters
         ----------
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
-        params: GapyFilterParameter, optional
+        params: GazepyFilterParameter, optional
             a filter parameter object configuring the gaze analysis filters.
         """
         self.gac = lib.gac
@@ -197,10 +200,10 @@ class Gapy():
 
         Returns
         -------
-        GapyFilterParameter, None
+        GazepyFilterParameter, None
             the parameter structure or None on failure
         """
-        params = GapyFilterParameter()
+        params = GazepyFilterParameter()
         if self.gac.gac_get_filter_parameter(self.h, byref(params)):
             return params
         else:
@@ -220,12 +223,12 @@ class Gapy():
 
         Returns
         -------
-        GapyFixation, None
+        GazepyFixation, None
             If a fixation was detected a fixation structure is returned. If
             no fixation was detected or a fixation is still ongoing, None is
             returned.
         """
-        fixation = GapyFixation()
+        fixation = GazepyFixation()
         if self.gac.gac_sample_window_fixation_filter(self.h, byref(fixation)):
             return fixation
         else:
@@ -238,12 +241,12 @@ class Gapy():
 
         Returns
         -------
-        GapySaccade, None
+        GazepySaccade, None
             If a saccade was detected a sacade structure is returned. If
             no saccade was detected or a saccade is still ongoing, None is
             returned.
         """
-        saccade = GapySaccade()
+        saccade = GazepySaccade()
         if self.gac.gac_sample_window_saccade_filter(self.h, byref(saccade)):
             return saccade
         else:
@@ -272,17 +275,17 @@ class Gapy():
         """
         self.gac.gac_sample_window_update(self.h, ox, oy, oz, px, py, pz, timestamp)
 
-class GapyFilterFixation():
+class GazepyFilterFixation():
     """
     The fixation filter handler. Use this if only fixation parsing on the raw
-    data is required. Otherwise use the class Gapy instead.
+    data is required. Otherwise use the class Gazepy instead.
     """
 
     def __init__(self, lib, dispersion_threshold, duration_threshold):
         """
         Parameters
         ----------
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
         dispersion_threshold: float
             the dispersion threshold in degrees.
@@ -309,33 +312,33 @@ class GapyFilterFixation():
 
         Parameters
         ----------
-        sample: GapySample
+        sample: GazepySample
             a sample structure with the new sample data.
 
         Returns
         -------
-        GapyFixation, None
+        GazepyFixation, None
             If a fixation was detected a fixation structure is returned. If
             no fixation was detected or a fixation is still ongoing, None is
             returned.
         """
-        fixation = GapyFixation()
+        fixation = GazepyFixation()
         if self.gac.gac_filter_fixation(self.f, sample, fixation):
             return fixation
         else:
             return None
 
-class GapyFilterGap():
+class GazepyFilterGap():
     """
     The gap filter handler. Use this if only gap filling on the raw data is
-    required. Otherwise use the class Gapy instead.
+    required. Otherwise use the class Gazepy instead.
     """
 
     def __init__(self, lib, max_gap_length, sample_period):
         """
         Parameters
         ----------
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
         max_gap_length: float
             the maximal gap length in milliseconds to fil-in samples. Larger
@@ -363,9 +366,9 @@ class GapyFilterGap():
 
         Parameters
         ----------
-        samples: GapyQueue
+        samples: GazepyQueue
             the sample list to fill in.
-        sample: GapySample
+        sample: GazepySample
             the new gaze sample to add to the sample list
 
         Returns
@@ -375,15 +378,15 @@ class GapyFilterGap():
         """
         return self.gac.gac_filter_gap(self.f, samples, sample)
 
-class GapyFilterNoise():
+class GazepyFilterNoise():
     """
     The noise filter handler. Use this if only noise filtering on the raw data
-    is required. Otherwise use the class Gapy instead.
+    is required. Otherwise use the class Gazepy instead.
     """
 
     def __init__(self, lib, mid_idx):
         """
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
         mid_idx: int
             the middle index of the window. This is used to compute the length
@@ -410,28 +413,28 @@ class GapyFilterNoise():
 
         Parameters
         ----------
-        sample: GapySample
+        sample: GazepySample
             the new gaze sample to add to the filter window.
 
         Returns
         -------
-        GapySample, None
+        GazepySample, None
             if the filter window is filled the averaged gaze sample is returned,
             othrewise None.
         """
         return self.gac.gac_filter_noise(self.f, sample)
 
-class GapyFilterSaccade():
+class GazepyFilterSaccade():
     """
     The saccade filter handler. Use this if only saccade parsing on the raw
-    data is required. Otherwise use the class Gapy instead.
+    data is required. Otherwise use the class Gazepy instead.
     """
 
     def __init__(self, lib, velocity_threshold):
         """
         Parameters
         ----------
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
         velocity_threshold: float
             the velocity threshold in degrees per second.
@@ -456,23 +459,23 @@ class GapyFilterSaccade():
 
         Parameters
         ----------
-        sample: GapySample
+        sample: GazepySample
             a sample structure with the new sample data.
 
         Returns
         -------
-        GapySaccade, None
+        GazepySaccade, None
             If a saccade was detected a saccade structure is returned. If
             no saccade was detected or a saccade is still ongoing, None is
             returned.
         """
-        saccade = GapySaccade()
+        saccade = GazepySaccade()
         if self.gac.gac_filter_saccade(self.f, sample, saccade):
             return saccade
         else:
             return None
 
-class GapyQueue():
+class GazepyQueue():
     """
     A queue which grows dynamically in size.
     """
@@ -481,7 +484,7 @@ class GapyQueue():
         """
         Parameters
         ----------
-        lib: GapyLib
+        lib: GazepyLib
             the reference to the C library.
         length: int
             the initial length of the queue.
@@ -558,14 +561,3 @@ class GapyQueue():
         Remove a sample from the queue tail.
         """
         self.gac.gac_queue_remove(self.q)
-
-
-if __name__ == "__main__":
-    lib = GapyLib()
-    params = lib.getFilterParameterDefault()
-    print(params.gap.max_gap_length)
-
-    params.gap.max_gap_length = 1
-    h = Gapy(lib, params)
-    params = h.getFilterParameter()
-    print(params.gap.max_gap_length)
