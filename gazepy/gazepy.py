@@ -3,6 +3,7 @@ Python bindings for the C library libgac.
 """
 
 from ctypes import *
+import platform
 import os
 
 class GazepyFilterParameterGap(Structure):
@@ -94,8 +95,12 @@ class GazepyLib():
     def __init__(self):
         # load dynamic library
         # libname = pathlib.Path().absolute() / "bin/libgac.so"
-        libname = os.path.abspath( os.path.dirname(__file__)) + "/bin/libgac.so"
-        self.gac = CDLL(libname)
+        libname = os.path.abspath( os.path.dirname(__file__)) + "/bin/libgac"
+        if platform.uname()[0] == "Windows":
+            libname += ".dll"
+        else:
+            libname += ".so"
+        self.gac = cdll.LoadLibrary(libname)
 
         # define function interfaces
         self.gac.gac_get_filter_parameter.restype = c_bool
@@ -143,6 +148,7 @@ class GazepyLib():
         self.gac.gac_sample_window_fixation_filter.argtypes = [c_void_p, POINTER(GazepyFixation)]
         self.gac.gac_sample_window_saccade_filter.restype = c_bool
         self.gac.gac_sample_window_saccade_filter.argtypes = [c_void_p, POINTER(GazepySaccade)]
+        self.gac.gac_sample_window_update.restype = c_uint
         self.gac.gac_sample_window_update.argtypes = [c_void_p, c_float, c_float, c_float, c_float, c_float, c_float, c_double]
 
     def getFilterParameterDefault(self):
