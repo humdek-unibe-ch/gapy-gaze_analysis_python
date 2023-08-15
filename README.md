@@ -21,11 +21,11 @@ lib = gazepy.GazepyLib()
 h = gazepy.Gazepy(lib)
 ```
 
-In order to parse gaze data for fixations and saccades and perform noise and gap filtering loop over the gaze data and call the following functions:
+In order to parse gaze data for fixations and saccades and perform noise and gap filtering **loop** over the gaze data and call the following functions for each sample:
 ```py
 # add a sample to the sliding window and filter the sample
 h.update(float(origin_x), float(origin_y), float(origin_z), float(point_x), float(point_y), float(point_z), float(timestamp))
-# parse for fixation
+# parse for fixations
 fixation = h.fixationFilter()
 if fixation is not None:
     # store the detected fixation
