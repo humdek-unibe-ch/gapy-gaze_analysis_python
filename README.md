@@ -29,10 +29,12 @@ h.update(float(origin_x), float(origin_y), float(origin_z), float(point_x), floa
 fixation = h.fixationFilter()
 if fixation is not None:
     # store the detected fixation
+    pass
 # parse for saccades
 saccade = h.saccadeFilter()
 if saccade is not None:
     # store the detected saccade
+    pass
 # cleanup the sliding window
 h.cleanup()
 ```
