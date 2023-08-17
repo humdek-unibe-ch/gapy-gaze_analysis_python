@@ -65,7 +65,7 @@ class GazepySample(Structure):
             ("point", c_float * 3),
             ("origin", c_float * 3),
             ("timestamp", c_double),
-            ("label", c_wchar_p)
+            ("label", c_char_p)
     ]
 
 class GazepyFixation(Structure):
@@ -113,22 +113,38 @@ class GazepyLib():
 
         # define function interfaces
         self.gac.gac_get_filter_parameter.restype = c_bool
-        self.gac.gac_get_filter_parameter.argtypes = [c_void_p, POINTER(GazepyFilterParameter)]
+        self.gac.gac_get_filter_parameter.argtypes = [
+                c_void_p, POINTER(GazepyFilterParameter)
+        ]
         self.gac.gac_get_filter_parameter_default.restype = c_bool
-        self.gac.gac_get_filter_parameter_default.argtypes = [POINTER(GazepyFilterParameter)]
+        self.gac.gac_get_filter_parameter_default.argtypes = [
+                POINTER(GazepyFilterParameter)
+        ]
         self.gac.gac_create.restype = c_void_p
         self.gac.gac_create.argtypes = [POINTER(GazepyFilterParameter)]
         self.gac.gac_destroy.argtypes = [c_void_p]
+        self.gac.gac_set_screen.restype = c_bool
+        self.gac.gac_set_screen.argtypes = [
+                c_bool,
+                c_float, c_float, c_float,
+                c_float, c_float, c_float,
+                c_float, c_float, c_float,
+                c_float, c_float, c_float
+        ]
         self.gac.gac_filter_fixation_create.restype = c_void_p
         self.gac.gac_filter_fixation_create.argtypes = [c_double, c_double]
         self.gac.gac_filter_fixation_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_fixation.restype = c_bool
-        self.gac.gac_filter_fixation.argtypes = [c_void_p, POINTER(GazepySample), POINTER(GazepyFixation)]
+        self.gac.gac_filter_fixation.argtypes = [
+                c_void_p, POINTER(GazepySample), POINTER(GazepyFixation)
+        ]
         self.gac.gac_filter_gap_create.restype = c_void_p
         self.gac.gac_filter_gap_create.argtypes = [c_double, c_double]
         self.gac.gac_filter_gap_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_gap.restype = c_uint
-        self.gac.gac_filter_gap.argtypes = [c_void_p, c_void_p, POINTER(GazepySample)]
+        self.gac.gac_filter_gap.argtypes = [
+                c_void_p, c_void_p, POINTER(GazepySample)
+        ]
         self.gac.gac_filter_noise_create.restype = c_void_p
         self.gac.gac_filter_noise_create.argtypes = [c_uint, c_uint]
         self.gac.gac_filter_noise_destroy.argtypes = [c_void_p]
@@ -138,7 +154,9 @@ class GazepyLib():
         self.gac.gac_filter_saccade_create.argtypes = [c_float]
         self.gac.gac_filter_saccade_destroy.argtypes = [c_void_p]
         self.gac.gac_filter_saccade.restype = c_bool
-        self.gac.gac_filter_saccade.argtypes = [c_void_p, POINTER(GazepySample), POINTER(GazepySaccade)]
+        self.gac.gac_filter_saccade.argtypes = [
+                c_void_p, POINTER(GazepySample), POINTER(GazepySaccade)
+        ]
         self.gac.gac_queue_clear.restype = c_bool
         self.gac.gac_queue_clear.argtypes = [c_void_p]
         self.gac.gac_queue_create.restype = c_void_p
@@ -154,11 +172,28 @@ class GazepyLib():
         self.gac.gac_sample_window_cleanup.restype = c_bool
         self.gac.gac_sample_window_cleanup.argtypes = [c_void_p]
         self.gac.gac_sample_window_fixation_filter.restype = c_bool
-        self.gac.gac_sample_window_fixation_filter.argtypes = [c_void_p, POINTER(GazepyFixation)]
+        self.gac.gac_sample_window_fixation_filter.argtypes = [
+                c_void_p, POINTER(GazepyFixation)
+        ]
         self.gac.gac_sample_window_saccade_filter.restype = c_bool
-        self.gac.gac_sample_window_saccade_filter.argtypes = [c_void_p, POINTER(GazepySaccade)]
+        self.gac.gac_sample_window_saccade_filter.argtypes = [
+                c_void_p, POINTER(GazepySaccade)
+        ]
         self.gac.gac_sample_window_update.restype = c_uint
-        self.gac.gac_sample_window_update.argtypes = [c_void_p, c_float, c_float, c_float, c_float, c_float, c_float, c_double, c_uint, c_wchar_p]
+        self.gac.gac_sample_window_update.argtypes = [
+                c_void_p,
+                c_float, c_float, c_float,
+                c_float, c_float, c_float,
+                c_double, c_uint, c_char_p
+        ]
+        self.gac.gac_sample_window_update_screen.restype = c_uint
+        self.gac.gac_sample_window_update_screen.argtypes = [
+                c_void_p,
+                c_float, c_float, c_float,
+                c_float, c_float, c_float,
+                c_float, c_float,
+                c_double, c_uint, c_char_p
+        ]
         self.gac.gac_sample_destroy.argtypes = [POINTER(GazepySample)]
         self.gac.gac_fixation_destroy.argtypes = [POINTER(GazepyFixation)]
         self.gac.gac_saccade_destroy.argtypes = [POINTER(GazepySaccade)]
@@ -268,6 +303,57 @@ class Gazepy():
         else:
             return None
 
+    def setScreen(self, is_normalized,
+            top_left_x, top_left_y, top_left_z,
+            top_right_x, top_right_y, top_right_z,
+            bottom_left_x, bottom_left_y, bottom_left_z,
+            bottom_right_x, bottom_right_y, bottom_right_z ):
+        """
+        Configure the screen position in 3d space. This allows to compute 2d
+        gaze point coordinates.
+
+        Parameters
+        ----------
+        is_normalized: bool
+            If set to true computed screen points will be normalized where (0,
+            0) corresponds to the top left corner and (1, 1) to to the bottom
+            right corner of the screen.
+        top_left_x: float
+            The x coordinate of the top left screen corner.
+        top_left_y: float
+            The y coordinate of the top left screen corner.
+        top_left_z: float
+            The z coordinate of the top left screen corner.
+        top_right_x: float
+            The x coordinate of the top right screen corner.
+        top_right_y: float
+            The y coordinate of the top right screen corner.
+        top_right_z: float
+            The z coordinate of the top right screen corner.
+        bottom_left_x: float
+            The x coordinate of the bottom left screen corner.
+        bottom_left_y: float
+            The y coordinate of the bottom left screen corner.
+        bottom_left_z: float
+            The z coordinate of the bottom left screen corner.
+        bottom_right_x: float
+            The x coordinate of the bottom right screen corner.
+        bottom_right_y: float
+            The y coordinate of the bottom right screen corner.
+        bottom_right_z: float
+            The z coordinate of the bottom right screen corner.
+
+        Returns
+        -------
+        bool
+            True on success, false on failure.
+        """
+        return gac.gac_set_screen(is_normalized,
+            top_left_x, top_left_y, top_left_z,
+            top_right_x, top_right_y, top_right_z,
+            bottom_left_x, bottom_left_y, bottom_left_z,
+            bottom_right_x, bottom_right_y, bottom_right_z )
+
     def update(self, ox, oy, oz, px, py, pz, timestamp, trial_id, label):
         """
         Update the sample window with a new gaze sample.
@@ -298,7 +384,48 @@ class Gazepy():
         int
             the number of samples added to the sample window.
         """
-        self.gac.gac_sample_window_update(self.h, ox, oy, oz, px, py, pz, timestamp, trial_id, label)
+        self.gac.gac_sample_window_update(self.h, ox, oy, oz, px, py, pz,
+                timestamp, trial_id, label.encode())
+
+    def updateWithScreen(self, ox, oy, oz, px, py, pz, sx, sy, timestamp,
+            trial_id, label):
+        """
+        Update the sample window with a new gaze sample. Use this if the raw
+        data includes 2d screen gaze points. Otherwise use update() and set the
+        screen configuration in 3d space with setScreen().
+
+        Parameters
+        ----------
+        ox: float
+            the x coordiante of the gaze origin.
+        oy: float
+            the y coordiante of the gaze origin.
+        oz: float
+            the z coordiante of the gaze origin.
+        px: float
+            the x coordiante of the gaze point.
+        py: float
+            the y coordiante of the gaze point.
+        pz: float
+            the z coordiante of the gaze point.
+        sx: float
+            the x coordiante of the screen gaze point.
+        sy: float
+            the y coordiante of the screen gaze point.
+        timestamp: float
+            the timestamp of the gaze sample in milliseconds.
+        trial_id: int
+            the ID of the ongoing trial.
+        label: string
+            an arbitrary string to annotate a sample.
+
+        Returns
+        -------
+        int
+            the number of samples added to the sample window.
+        """
+        self.gac.gac_sample_window_update_screen(self.h, ox, oy, oz, px, py, pz,
+                sx, sy, timestamp, trial_id, label.encode())
 
 class GazepyFilterFixation():
     """
