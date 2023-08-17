@@ -60,9 +60,12 @@ class GazepySample(Structure):
     """
     _fields_ = [
             ("is_heap", c_bool),
+            ("trial_id", c_uint),
+            ("screen_point", c_float * 2),
             ("point", c_float * 3),
             ("origin", c_float * 3),
-            ("timestamp", c_double)
+            ("timestamp", c_double),
+            ("label", c_wchar_p)
     ]
 
 class GazepyFixation(Structure):
@@ -71,10 +74,15 @@ class GazepyFixation(Structure):
     """
     _fields_ = [
             ("is_heap", c_bool),
+            ("screen_point", c_float * 2),
             ("point", c_float * 3),
             ("duration", c_double),
-            ("timestamp", c_double)
+            ("first_sample", GazepySample)
     ]
+
+    def __del__(self):
+        gazepy_lib.gac.gac_fixation_destroy(byref(self))
+
 
 class GazepySaccade(Structure):
     """
@@ -82,11 +90,12 @@ class GazepySaccade(Structure):
     """
     _fields_ = [
             ("is_heap", c_bool),
-            ("point_start", c_float * 3),
-            ("point_dest", c_float * 3),
-            ("duration", c_double),
-            ("timestamp", c_double)
+            ("first_sample", GazepySample),
+            ("last_sample", GazepySample)
     ]
+
+    def __del__(self):
+        gazepy_lib.gac.gac_saccade_destroy(byref(self))
 
 class GazepyLib():
     """
@@ -149,7 +158,10 @@ class GazepyLib():
         self.gac.gac_sample_window_saccade_filter.restype = c_bool
         self.gac.gac_sample_window_saccade_filter.argtypes = [c_void_p, POINTER(GazepySaccade)]
         self.gac.gac_sample_window_update.restype = c_uint
-        self.gac.gac_sample_window_update.argtypes = [c_void_p, c_float, c_float, c_float, c_float, c_float, c_float, c_double]
+        self.gac.gac_sample_window_update.argtypes = [c_void_p, c_float, c_float, c_float, c_float, c_float, c_float, c_double, c_uint, c_wchar_p]
+        self.gac.gac_sample_destroy.argtypes = [POINTER(GazepySample)]
+        self.gac.gac_fixation_destroy.argtypes = [POINTER(GazepyFixation)]
+        self.gac.gac_saccade_destroy.argtypes = [POINTER(GazepySaccade)]
 
     def getFilterParameterDefault(self):
         """
@@ -176,16 +188,14 @@ class Gazepy():
     saccadeFilter(), respectively.
     """
 
-    def __init__(self, lib, params=None):
+    def __init__(self, params=None):
         """
         Parameters
         ----------
-        lib: GazepyLib
-            the reference to the C library.
         params: GazepyFilterParameter, optional
             a filter parameter object configuring the gaze analysis filters.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.h = self.__create(params)
 
     def __del__(self):
@@ -258,7 +268,7 @@ class Gazepy():
         else:
             return None
 
-    def update(self, ox, oy, oz, px, py, pz, timestamp):
+    def update(self, ox, oy, oz, px, py, pz, timestamp, trial_id, label):
         """
         Update the sample window with a new gaze sample.
 
@@ -277,9 +287,18 @@ class Gazepy():
         pz: float
             the z coordiante of the gaze point.
         timestamp: float
-            the timestamp of the gaze sample in milliseconds
+            the timestamp of the gaze sample in milliseconds.
+        trial_id: int
+            the ID of the ongoing trial.
+        label: string
+            an arbitrary string to annotate a sample.
+
+        Returns
+        -------
+        int
+            the number of samples added to the sample window.
         """
-        self.gac.gac_sample_window_update(self.h, ox, oy, oz, px, py, pz, timestamp)
+        self.gac.gac_sample_window_update(self.h, ox, oy, oz, px, py, pz, timestamp, trial_id, label)
 
 class GazepyFilterFixation():
     """
@@ -287,18 +306,16 @@ class GazepyFilterFixation():
     data is required. Otherwise use the class Gazepy instead.
     """
 
-    def __init__(self, lib, dispersion_threshold, duration_threshold):
+    def __init__(self, dispersion_threshold, duration_threshold):
         """
         Parameters
         ----------
-        lib: GazepyLib
-            the reference to the C library.
         dispersion_threshold: float
             the dispersion threshold in degrees.
         duration_threashold: float
             the duration threshold in milliseconds.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.f = self.__create(dispersion_threshold, duration_threshold)
 
     def __del__(self):
@@ -340,17 +357,15 @@ class GazepyFilterGap():
     required. Otherwise use the class Gazepy instead.
     """
 
-    def __init__(self, lib, max_gap_length, sample_period):
+    def __init__(self, max_gap_length, sample_period):
         """
         Parameters
         ----------
-        lib: GazepyLib
-            the reference to the C library.
         max_gap_length: float
             the maximal gap length in milliseconds to fil-in samples. Larger
             gaps are ignored. If set to 0 the filter is disabled.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.f = self.__create(max_gap_length, sample_period)
 
     def __del__(self):
@@ -390,16 +405,14 @@ class GazepyFilterNoise():
     is required. Otherwise use the class Gazepy instead.
     """
 
-    def __init__(self, lib, mid_idx):
+    def __init__(self, mid_idx):
         """
-        lib: GazepyLib
-            the reference to the C library.
         mid_idx: int
             the middle index of the window. This is used to compute the length
             of the window: window_length = mid_idx * 2 + 1. If set to 0 the
             filter is disabled.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.f = self.__create(mid_idx)
 
     def __del__(self):
@@ -436,16 +449,14 @@ class GazepyFilterSaccade():
     data is required. Otherwise use the class Gazepy instead.
     """
 
-    def __init__(self, lib, velocity_threshold):
+    def __init__(self, velocity_threshold):
         """
         Parameters
         ----------
-        lib: GazepyLib
-            the reference to the C library.
         velocity_threshold: float
             the velocity threshold in degrees per second.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.f = self.__create(velocity_threshold)
 
     def __del__(self):
@@ -486,16 +497,14 @@ class GazepyQueue():
     A queue which grows dynamically in size.
     """
 
-    def __init__(self, lib, length):
+    def __init__(self, length):
         """
         Parameters
         ----------
-        lib: GazepyLib
-            the reference to the C library.
         length: int
             the initial length of the queue.
         """
-        self.gac = lib.gac
+        self.gac = gazepy_lib.gac
         self.item_type = item_type
         self.q = self.__create(length)
 
@@ -567,3 +576,11 @@ class GazepyQueue():
         Remove a sample from the queue tail.
         """
         self.gac.gac_queue_remove(self.q)
+
+gazepy_lib = GazepyLib()
+
+def getFilterParameterDefault():
+    return gazepy_lib.getFilterParameterDefault()
+
+def sampleDestroy(sample):
+    gazepy_lib.gac.gac_sample_destroy(byref(sample))
