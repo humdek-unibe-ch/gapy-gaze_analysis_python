@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gazepy"
+version = "0.1.0"
+authors = [
+    { name="Simon Maurer", email="simon.maurer@unibe.ch" }
+]
+description = "Python bindings for the C library libgac"
+readme = "README.md"
+
+[project.urls]
+"Homepage" = "http://phhum-a209-cp.unibe.ch:10012/LIB/LIB-gaze_analysis_py"
